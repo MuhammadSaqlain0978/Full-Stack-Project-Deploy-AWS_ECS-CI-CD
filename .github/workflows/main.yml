@@ -1,0 +1,79 @@
+name: ECS Pipeline
+
+on:
+  push:
+    branches: [ "main" ]
+
+env:
+  AWS_REGION: ${{ secrets.AWS_REGION }}
+  AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+
+# ========== JOB 1: BUILD & PUSH ==========
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    name: Build and Push Docker Images
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push Docker images
+        id: build
+        run: |
+          SHORT_SHA=$(echo $GITHUB_SHA | cut -c1-8)
+
+          FRONTEND_REPO=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/ecs-frontend-repo
+          BACKEND_REPO=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/ecs-backend-repo
+
+          FRONTEND_TAG=$FRONTEND_REPO:sha-$SHORT_SHA
+          BACKEND_TAG=$BACKEND_REPO:sha-$SHORT_SHA
+
+          echo "Building Frontend..."
+          docker build -t $FRONTEND_TAG ./frontend/App frontend
+          docker push $FRONTEND_TAG
+
+          echo "Building Backend..."
+          docker build -t $BACKEND_TAG ./backend
+          docker push $BACKEND_TAG
+
+          echo "FRONTEND_TAG=$FRONTEND_TAG" >> $GITHUB_ENV
+          echo "BACKEND_TAG=$BACKEND_TAG" >> $GITHUB_ENV
+
+  # ========== JOB 2: DEPLOY TO ECS ==========
+  deploy:
+    runs-on: ubuntu-latest
+    name: Deploy to ECS
+    needs: build
+
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Update ECS services
+        run: |
+          echo "Deploying ECS"
+
+          aws ecs update-service \
+            --cluster ecs-todo-cluster \
+            --service frontend-service \
+            --force-new-deployment
+
+          aws ecs update-service \
+            --cluster ecs-todo-cluster \
+            --service backend-service \
+            --force-new-deployment
