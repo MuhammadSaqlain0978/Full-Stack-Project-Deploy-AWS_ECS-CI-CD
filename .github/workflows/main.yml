@@ -1,4 +1,4 @@
-name: ECS Pipeline
+name: ECS 
 
 on:
   push:
@@ -8,11 +8,11 @@ env:
   AWS_REGION: ${{ secrets.AWS_REGION }}
   AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
 
-# ========== JOB 1: BUILD & PUSH ==========
+
 jobs:
   build:
     runs-on: ubuntu-latest
-    name: Build and Push Docker Images
+    name: Build, Push Images
 
     steps:
       - name: Checkout repository
@@ -28,7 +28,7 @@ jobs:
       - name: Login to Amazon ECR
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Build and push Docker images
+      - name: Build, push  images
         id: build
         run: |
           SHORT_SHA=$(echo $GITHUB_SHA | cut -c1-8)
@@ -50,7 +50,7 @@ jobs:
           echo "FRONTEND_TAG=$FRONTEND_TAG" >> $GITHUB_ENV
           echo "BACKEND_TAG=$BACKEND_TAG" >> $GITHUB_ENV
 
-  # ========== JOB 2: DEPLOY TO ECS ==========
+
   deploy:
     runs-on: ubuntu-latest
     name: Deploy to ECS
@@ -66,7 +66,7 @@ jobs:
 
       - name: Update ECS services
         run: |
-          echo "Deploying ECS"
+          echo "Deploying ecs"
 
           aws ecs update-service \
             --cluster ecs-todo-cluster \
