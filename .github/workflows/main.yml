@@ -40,7 +40,7 @@ jobs:
           BACKEND_TAG=$BACKEND_REPO:sha-$SHORT_SHA
 
           echo "Building Frontend..."
-          docker build -t $FRONTEND_TAG ./frontend
+          docker build -t $FRONTEND_TAG ./frontend/App frontend
           docker push $FRONTEND_TAG
 
           echo "Building Backend..."
