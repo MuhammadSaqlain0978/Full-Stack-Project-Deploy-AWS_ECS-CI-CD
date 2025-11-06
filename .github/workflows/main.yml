@@ -40,7 +40,8 @@ jobs:
           BACKEND_TAG=$BACKEND_REPO:sha-$SHORT_SHA
 
           echo "Building Frontend..."
-          docker build -t $FRONTEND_TAG ./frontend/App_frontend
+          docker build --build-arg VITE_API_URL="http://backend.local:5000/api/" -t $FRONTEND_TAG ./frontend/App_frontend
+          
           docker push $FRONTEND_TAG
 
           echo "Building Backend..."
