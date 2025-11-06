@@ -1,7 +1,7 @@
 name: ECS 
 
 on:
-  push:
+  push: 
     branches: [ "main" ]
 
 env:
